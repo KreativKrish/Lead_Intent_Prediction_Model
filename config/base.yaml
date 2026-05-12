@@ -1,0 +1,140 @@
+# Base Configuration - shared across all environments
+
+# Snowflake Data Warehouse
+snowflake:
+  account: "@{SNOWFLAKE_ACCOUNT}"
+  user: "@{SNOWFLAKE_USER}"
+  password: "@{SNOWFLAKE_PASSWORD}"
+  database: "@{SNOWFLAKE_DATABASE|LEAD_INTENT_DB}"
+  schema: "@{SNOWFLAKE_SCHEMA|FEATURES}"
+  warehouse: "@{SNOWFLAKE_WAREHOUSE|COMPUTE_WH}"
+  role: "@{SNOWFLAKE_ROLE|ANALYST}"
+
+# MLflow Experiment Tracking
+mlflow:
+  tracking_uri: "@{MLFLOW_TRACKING_URI|http://localhost:5000}"
+  backend_store_uri: "@{MLFLOW_BACKEND_STORE_URI|sqlite:///mlflow/mlflow.db}"
+  artifact_root: "@{MLFLOW_DEFAULT_ARTIFACT_ROOT|./mlflow/artifacts}"
+  experiment_name: "@{MLFLOW_EXPERIMENT_NAME|lead_intent_prediction}"
+  model_name: "@{MODEL_NAME|lead_intent_model}"
+  model_stage: "@{MODEL_STAGE|Production}"
+
+# API Configuration
+api:
+  host: "@{API_HOST|0.0.0.0}"
+  port: "@{API_PORT|8000}"
+  workers: "@{API_WORKERS|4}"
+  title: "Lead Intent Prediction API"
+  version: "0.1.0"
+  description: "Production API for lead intent prediction model"
+  log_level: "@{API_LOG_LEVEL|info}"
+  cors_origins:
+    - "*"
+
+# Feature Configuration
+features:
+  target_column: "intent_label"
+  numerical_features:
+    - "lead_score"
+    - "company_size"
+    - "engagement_score"
+    - "response_time_hours"
+    - "email_open_rate"
+    - "email_click_rate"
+    - "page_views"
+    - "time_since_signup_days"
+  categorical_features:
+    - "industry"
+    - "company_type"
+    - "location"
+    - "product_interest"
+    - "source"
+    - "sales_stage"
+  feature_selection:
+    method: "variance_threshold"
+    threshold: 0.01
+
+# Training Configuration
+training:
+  test_size: 0.2
+  random_state: 42
+  cv_folds: 5
+  sample_weights: true
+  class_weight: "balanced"
+
+  # Model hyperparameters
+  model:
+    type: "xgboost"  # xgboost or lightgbm
+    xgboost:
+      n_estimators: 100
+      max_depth: 6
+      learning_rate: 0.1
+      subsample: 0.8
+      colsample_bytree: 0.8
+      min_child_weight: 1
+      objective: "binary:logistic"
+      eval_metric: "auc"
+      random_state: 42
+
+  # Hyperparameter tuning
+  hyperparameter_tuning:
+    enabled: true
+    method: "optuna"  # optuna or grid_search
+    n_trials: 50
+    optuna:
+      sampler: "TPESampler"
+      pruner: "MedianPruner"
+
+# Evaluation Configuration
+evaluation:
+  metrics:
+    - "accuracy"
+    - "precision"
+    - "recall"
+    - "f1"
+    - "roc_auc"
+    - "pr_auc"
+  thresholds:
+    min_roc_auc: 0.8
+    min_f1: 0.75
+  confusion_matrix: true
+  feature_importance: true
+  shap_values: true
+
+# Data Validation
+data_validation:
+  enabled: true
+  framework: "pandera"  # pandera or great_expectations
+  check_duplicates: true
+  check_nulls: true
+  outlier_detection:
+    enabled: true
+    method: "iqr"
+    multiplier: 1.5
+
+# Feature Store
+feature_store:
+  location: "@{FEATURE_STORE_LOCATION|./feature_store}"
+  format: "parquet"
+  compression: "snappy"
+
+# Logging
+logging:
+  level: "@{LOG_LEVEL|INFO}"
+  format: "@{LOG_FORMAT|json}"
+  handlers:
+    - console
+    - file
+  file_path: "./logs/app.log"
+  max_size_mb: 100
+  backup_count: 10
+
+# Monitoring
+monitoring:
+  enabled: true
+  metrics_port: 8001
+  health_check_interval_seconds: 30
+  alerts:
+    model_drift: true
+    prediction_latency_ms: 500
+    error_rate_threshold: 0.01

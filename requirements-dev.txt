@@ -1,0 +1,29 @@
+# Include base requirements
+-r requirements.txt
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.1
+pytest-cov==4.1.0
+pytest-mock==3.14.0
+httpx==0.26.0
+
+# Code quality
+ruff==0.3.0
+mypy==1.8.0
+black==24.1.1
+isort==5.13.2
+
+# Development
+jupyter==1.0.0
+jupyterlab==4.0.9
+ipython==8.20.0
+notebook==7.1.0
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# Utilities
+ipdb==0.13.13
+click==8.1.7

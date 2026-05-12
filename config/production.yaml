@@ -1,0 +1,41 @@
+# Production Environment Configuration
+
+mlflow:
+  experiment_name: "lead_intent_production"
+  model_stage: "Production"
+
+api:
+  port: 8000
+  workers: 4
+  log_level: "warning"
+  cors_origins:
+    - "https://api.example.com"
+    - "https://app.example.com"
+
+training:
+  test_size: 0.2
+  cv_folds: 5
+  model:
+    xgboost:
+      n_estimators: 200
+
+evaluation:
+  thresholds:
+    min_roc_auc: 0.85
+    min_f1: 0.8
+
+data_validation:
+  enabled: true
+
+logging:
+  level: "WARNING"
+  format: "json"
+  file_path: "/var/log/lead_intent/app.log"
+
+monitoring:
+  enabled: true
+  metrics_port: 8001
+  alerts:
+    model_drift: true
+    prediction_latency_ms: 300
+    error_rate_threshold: 0.001

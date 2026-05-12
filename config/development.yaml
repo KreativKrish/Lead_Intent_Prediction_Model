@@ -1,0 +1,33 @@
+# Development Environment Configuration
+
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  backend_store_uri: "sqlite:///mlflow/mlflow.db"
+  artifact_root: "./mlflow/artifacts"
+
+api:
+  port: 8000
+  workers: 1
+  log_level: "debug"
+
+training:
+  test_size: 0.2
+  cv_folds: 3
+  model:
+    xgboost:
+      n_estimators: 50
+      max_depth: 4
+
+evaluation:
+  thresholds:
+    min_roc_auc: 0.7
+
+data_validation:
+  enabled: true
+
+logging:
+  level: "DEBUG"
+  format: "json"
+
+monitoring:
+  enabled: false
