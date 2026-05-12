@@ -4,8 +4,9 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 
-from ..src.models import ModelRegistry
-from ..src.utils.logger import get_logger
+from fastapi import HTTPException
+from src.models import ModelRegistry
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -24,14 +25,16 @@ def init_model() -> None:
         _model_cache = _model_registry.load_champion(stage=stage)
         logger.info(f"Model loaded successfully from {stage} stage")
     except Exception as e:
-        logger.error(f"Failed to load model: {e}")
-        raise
+        if os.getenv("ENV", "development") == "production":
+            logger.error(f"Failed to load model: {e}")
+            raise
+        logger.warning(f"Model unavailable at startup — predictions disabled until MLflow is reachable: {e}")
 
 
 def get_model():
     """Get loaded model from cache."""
     if _model_cache is None:
-        raise RuntimeError("Model not initialized. Call init_model() first.")
+        raise HTTPException(status_code=503, detail="Model unavailable — MLflow not reachable at startup.")
     return _model_cache
 
 

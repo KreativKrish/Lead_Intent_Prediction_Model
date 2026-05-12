@@ -5,7 +5,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ...src.utils.logger import get_logger
+from src.utils.logger import get_logger
 from ..dependencies import get_model, get_request_id
 from ..schemas import LeadFeatures, PredictionResponse
 

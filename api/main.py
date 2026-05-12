@@ -4,10 +4,12 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-from ..src.utils.config import get_config
-from ..src.utils.logger import get_logger
+from src.utils.config import get_config
+from src.utils.logger import get_logger
 from .dependencies import lifespan
 from .routers import health, predict
 
@@ -43,6 +45,11 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(predict.router)
 
+    # Serve frontend static files at /static (CSS, JS)
+    frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+    if os.path.isdir(frontend_dir):
+        app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+
     logger.info("FastAPI application created")
 
     return app
@@ -58,7 +65,15 @@ async def root():
         "message": "Lead Intent Prediction API",
         "docs": "/docs",
         "health": "/health",
+        "ui": "/ui",
     }
+
+
+@app.get("/ui", include_in_schema=False)
+async def serve_ui():
+    """Serve the prediction dashboard frontend."""
+    frontend_index = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
+    return FileResponse(frontend_index)
 
 
 def main():
