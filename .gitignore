@@ -87,3 +87,19 @@ data/processed/
 models/
 outputs/
 credentials/
+# Added by code-review-graph
+.code-review-graph/
+.github
+.cursor
+.vscode
+.kiro
+.gemini
+.qoder
+.claude
+.cursor*
+.windsurf*
+.mcp*
+.opencode*
+AGENTS.md
+GEMINI.md
+QODER.md

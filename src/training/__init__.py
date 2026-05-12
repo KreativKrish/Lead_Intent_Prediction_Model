@@ -1,6 +1,7 @@
 """Model training and evaluation module."""
 
-from .trainer import Trainer
 from .evaluator import Evaluator
+from .model_selector import ModelResult, ModelSelector
+from .trainer import Trainer
 
-__all__ = ["Trainer", "Evaluator"]
+__all__ = ["Evaluator", "ModelResult", "ModelSelector", "Trainer"]

@@ -1,4 +1,4 @@
-"""Model training DAG."""
+"""Model training DAG — trains all three tiers and triggers deployment gate."""
 
 from datetime import datetime, timedelta
 
@@ -17,63 +17,70 @@ default_args = {
 dag = DAG(
     "model_training",
     default_args=default_args,
-    description="Model training pipeline",
+    description="Ensemble model training pipeline (Baseline / Challenger / Champion)",
     schedule_interval="@weekly",
     tags=["training", "ml"],
 )
 
 
-def train_model(**context):
-    """Train the model."""
+def train_all_models(**context):
+    """Train Baseline (LR), Challenger (GB/RF), and Champion (XGBoost) tiers."""
     from src.training import Trainer
 
     trainer = Trainer()
-    run_id = trainer.train()
+    run_ids = trainer.train_all()
 
-    # Store run_id in XCom for downstream tasks
-    context["task_instance"].xcom_push(key="mlflow_run_id", value=run_id)
-    print(f"Training complete. Run ID: {run_id}")
+    ti = context["task_instance"]
+    ti.xcom_push(key="baseline_run_id",   value=run_ids["baseline_run_id"])
+    ti.xcom_push(key="challenger_run_id", value=run_ids["challenger_run_id"])
+    ti.xcom_push(key="champion_run_id",   value=run_ids["champion_run_id"])
+    ti.xcom_push(key="winner_run_id",     value=run_ids["winner_run_id"])
+    ti.xcom_push(key="winner_tier",       value=run_ids["winner_tier"])
 
-    return run_id
-
-
-def evaluate_model(**context):
-    """Evaluate the model."""
-    run_id = context["task_instance"].xcom_pull(
-        key="mlflow_run_id", task_ids="train_model"
+    print(
+        f"Ensemble training complete. "
+        f"Winner: {run_ids['winner_tier']} (run_id={run_ids['winner_run_id']})"
     )
-    print(f"Evaluating model from run: {run_id}")
+    return run_ids
 
 
-def register_model(**context):
-    """Register model to MLflow registry."""
-    from src.models import ModelRegistry
+def evaluate_all_models(**context):
+    """Log a comparison summary using the XCom run IDs pushed by train_all_models."""
+    ti = context["task_instance"]
+    winner_run_id = ti.xcom_pull(key="winner_run_id", task_ids="train_all_models")
+    winner_tier   = ti.xcom_pull(key="winner_tier",   task_ids="train_all_models")
+    print(f"Evaluation complete. Selected champion: {winner_tier} (run_id={winner_run_id})")
 
-    run_id = context["task_instance"].xcom_pull(
-        key="mlflow_run_id", task_ids="train_model"
-    )
 
-    registry = ModelRegistry()
-    version = registry.register_model(run_id)
-    print(f"Model registered. Version: {version}")
+def trigger_deployment(**context):
+    """Trigger the model_deployment DAG passing the winner run_id in conf."""
+    from airflow.api.common.trigger_dag import trigger_dag
+
+    ti = context["task_instance"]
+    conf = {
+        "winner_run_id": ti.xcom_pull(key="winner_run_id", task_ids="train_all_models"),
+        "winner_tier":   ti.xcom_pull(key="winner_tier",   task_ids="train_all_models"),
+    }
+    trigger_dag(dag_id="model_deployment", conf=conf, replace_microseconds=False)
+    print(f"Triggered model_deployment DAG with conf: {conf}")
 
 
 train_task = PythonOperator(
-    task_id="train_model",
-    python_callable=train_model,
+    task_id="train_all_models",
+    python_callable=train_all_models,
     dag=dag,
 )
 
 eval_task = PythonOperator(
-    task_id="evaluate_model",
-    python_callable=evaluate_model,
+    task_id="evaluate_all_models",
+    python_callable=evaluate_all_models,
     dag=dag,
 )
 
-register_task = PythonOperator(
-    task_id="register_model",
-    python_callable=register_model,
+trigger_task = PythonOperator(
+    task_id="trigger_deployment",
+    python_callable=trigger_deployment,
     dag=dag,
 )
 
-train_task >> eval_task >> register_task
+train_task >> eval_task >> trigger_task

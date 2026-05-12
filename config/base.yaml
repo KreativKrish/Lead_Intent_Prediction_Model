@@ -65,6 +65,37 @@ training:
   # Model hyperparameters
   model:
     type: "xgboost"  # xgboost or lightgbm
+
+    # Challenger algorithm selector
+    challenger:
+      algorithm: "gradient_boosting"  # "gradient_boosting" | "random_forest"
+
+    # Baseline: Logistic Regression
+    logistic_regression:
+      C: 1.0
+      max_iter: 1000
+      solver: "lbfgs"
+      class_weight: "balanced"
+      random_state: 42
+
+    # Challenger: Gradient Boosting
+    gradient_boosting:
+      n_estimators: 100
+      max_depth: 3
+      learning_rate: 0.1
+      subsample: 0.8
+      random_state: 42
+
+    # Challenger (alternative): Random Forest
+    random_forest:
+      n_estimators: 100
+      max_depth: null
+      min_samples_split: 2
+      class_weight: "balanced"
+      random_state: 42
+      n_jobs: -1
+
+    # Champion: XGBoost
     xgboost:
       n_estimators: 100
       max_depth: 6
@@ -84,6 +115,11 @@ training:
     optuna:
       sampler: "TPESampler"
       pruner: "MedianPruner"
+
+# Model Selection / Competition Framework
+model_selection:
+  primary_metric: "roc_auc"     # must be present in evaluation.metrics
+  promotion_threshold: 0.0       # challenger must beat champion by this delta
 
 # Evaluation Configuration
 evaluation:
