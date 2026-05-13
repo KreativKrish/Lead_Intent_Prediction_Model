@@ -3,6 +3,7 @@
 from typing import List
 import uuid
 
+import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.utils.logger import get_logger
@@ -32,13 +33,9 @@ async def predict(
     try:
         logger.info(f"Making prediction for request {request_id}")
 
-        # Convert features to dict and then to list for model input
-        feature_dict = features.dict()
-        feature_values = list(feature_dict.values())
-
-        # Make prediction
-        prediction = model.predict([feature_values])[0]
-        probability = model.predict_proba([feature_values])[0][1]
+        feature_df = pd.DataFrame([features.dict()])
+        prediction = model.predict(feature_df)[0]
+        probability = model.predict_proba(feature_df)[0][1]
 
         logger.info(
             f"Prediction complete: label={prediction}, probability={probability:.4f}"
@@ -78,11 +75,9 @@ async def predict_batch(
 
         results = []
         for i, features in enumerate(features_list):
-            feature_dict = features.dict()
-            feature_values = list(feature_dict.values())
-
-            prediction = model.predict([feature_values])[0]
-            probability = model.predict_proba([feature_values])[0][1]
+            feature_df = pd.DataFrame([features.dict()])
+            prediction = model.predict(feature_df)[0]
+            probability = model.predict_proba(feature_df)[0][1]
 
             pred_id = f"pred_{request_id}_{i}"
             results.append(

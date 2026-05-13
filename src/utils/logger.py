@@ -41,17 +41,19 @@ def get_logger(name: str) -> logging.Logger:
 
     logger = structlog.get_logger(name)
 
-    # Configure stdlib logging
+    # Configure stdlib logging once — basicConfig is a no-op if handlers exist
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, log_level),
     )
 
-    file_handler = logging.FileHandler(LOG_DIR / "app.log")
-    file_handler.setFormatter(
-        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    )
-    logging.getLogger().addHandler(file_handler)
+    root = logging.getLogger()
+    if not any(isinstance(h, logging.FileHandler) for h in root.handlers):
+        file_handler = logging.FileHandler(LOG_DIR / "app.log")
+        file_handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        )
+        root.addHandler(file_handler)
 
     return logger

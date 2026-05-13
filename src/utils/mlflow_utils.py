@@ -110,7 +110,7 @@ class MLflowManager:
             Loaded model (pyfunc format).
         """
         model_uri = f"models:/{self.model_name}/{stage}"
-        model = mlflow.pyfunc.load_model(model_uri)
+        model = mlflow.sklearn.load_model(model_uri)
         logger.info(f"Loaded champion model from stage: {stage}")
         return model
 

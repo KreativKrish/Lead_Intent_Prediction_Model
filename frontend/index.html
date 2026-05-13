@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Intent Predictor</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-icon">🎯</span>
+        <span class="brand-name">Lead Intent Predictor</span>
+      </div>
+      <div id="api-status" class="status-badge checking">
+        <span class="status-dot">●</span>
+        <span class="status-text">Checking…</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="single" onclick="switchTab('single')">Single Prediction</button>
+      <button class="tab-btn" data-tab="batch"  onclick="switchTab('batch')">Batch Predictions</button>
+    </div>
+
+    <!-- ── Single Prediction ─────────────────────────────────────────── -->
+    <div id="panel-single" class="tab-panel active">
+      <div class="panel-grid">
+
+        <div class="card form-card">
+          <h2>Lead Details</h2>
+          <form id="single-form" onsubmit="submitSinglePrediction(event)">
+
+            <div class="form-section">
+              <div class="section-label">Scores &amp; Metrics</div>
+              <div class="form-grid-2">
+                <div class="field-group">
+                  <label for="lead_score">Lead Score <span class="hint">(0–100)</span></label>
+                  <input type="number" id="lead_score" name="lead_score" min="0" max="100" step="0.1" value="65.0" required>
+                </div>
+                <div class="field-group">
+                  <label for="company_size">Company Size</label>
+                  <input type="number" id="company_size" name="company_size" min="1" step="1" value="150" required>
+                </div>
+                <div class="field-group">
+                  <label for="engagement_score">Engagement Score <span class="hint">(0–100)</span></label>
+                  <input type="number" id="engagement_score" name="engagement_score" min="0" max="100" step="0.1" value="72.0" required>
+                </div>
+                <div class="field-group">
+                  <label for="response_time_hours">Response Time <span class="hint">(hrs)</span></label>
+                  <input type="number" id="response_time_hours" name="response_time_hours" min="0" step="0.1" value="4.0" required>
+                </div>
+                <div class="field-group">
+                  <label for="email_open_rate">Email Open Rate <span class="hint">(0–1)</span></label>
+                  <input type="number" id="email_open_rate" name="email_open_rate" min="0" max="1" step="0.01" value="0.45" required>
+                </div>
+                <div class="field-group">
+                  <label for="email_click_rate">Email Click Rate <span class="hint">(0–1)</span></label>
+                  <input type="number" id="email_click_rate" name="email_click_rate" min="0" max="1" step="0.01" value="0.12" required>
+                </div>
+                <div class="field-group">
+                  <label for="page_views">Page Views</label>
+                  <input type="number" id="page_views" name="page_views" min="0" step="1" value="23" required>
+                </div>
+                <div class="field-group">
+                  <label for="time_since_signup_days">Days Since Signup</label>
+                  <input type="number" id="time_since_signup_days" name="time_since_signup_days" min="0" step="1" value="30" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="section-label">Lead Attributes</div>
+              <div class="form-grid-2">
+                <div class="field-group">
+                  <label for="industry">Industry</label>
+                  <select id="industry" name="industry" required>
+                    <option value="Technology">Technology</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Retail">Retail</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label for="company_type">Company Type</label>
+                  <select id="company_type" name="company_type" required>
+                    <option value="SaaS">SaaS</option>
+                    <option value="Enterprise">Enterprise</option>
+                    <option value="Startup">Startup</option>
+                    <option value="SMB">SMB</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label for="location">Location</label>
+                  <select id="location" name="location" required>
+                    <option value="US">US</option>
+                    <option value="EU">EU</option>
+                    <option value="APAC">APAC</option>
+                    <option value="LATAM">LATAM</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label for="product_interest">Product Interest</label>
+                  <select id="product_interest" name="product_interest" required>
+                    <option value="Enterprise">Enterprise</option>
+                    <option value="SMB">SMB</option>
+                    <option value="Startup">Startup</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label for="source">Source</label>
+                  <select id="source" name="source" required>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Direct">Direct</option>
+                    <option value="Partner">Partner</option>
+                    <option value="Event">Event</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label for="sales_stage">Sales Stage</label>
+                  <select id="sales_stage" name="sales_stage" required>
+                    <option value="Awareness">Awareness</option>
+                    <option value="Consideration">Consideration</option>
+                    <option value="Decision">Decision</option>
+                    <option value="Qualification">Qualification</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="predict-btn">
+              Predict Intent
+            </button>
+          </form>
+        </div>
+
+        <div class="card result-card" id="single-result" style="display:none">
+          <h2>Prediction Result</h2>
+
+          <div class="gauge-container">
+            <svg viewBox="0 0 120 120" class="gauge">
+              <circle cx="60" cy="60" r="54" class="gauge-track" fill="none" stroke-width="10"/>
+              <circle cx="60" cy="60" r="54" class="gauge-fill"  fill="none" stroke-width="10"
+                      stroke-dasharray="0 339.29" stroke-linecap="round"
+                      transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="gauge-label">
+              <span class="gauge-pct">0%</span>
+              <span class="gauge-hint">probability</span>
+            </div>
+          </div>
+
+          <div class="intent-badge-container">
+            <span class="intent-badge" id="intent-badge">—</span>
+          </div>
+
+          <div class="result-details">
+            <div class="detail-row">
+              <span class="detail-label">Confidence</span>
+              <span class="detail-value confidence">—</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Model Version</span>
+              <span class="detail-value model-version">—</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Prediction ID</span>
+              <span class="detail-value pred-id small-text">—</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Batch Predictions ──────────────────────────────────────────── -->
+    <div id="panel-batch" class="tab-panel">
+      <div class="card">
+
+        <div class="batch-header">
+          <h2>Batch Predictions</h2>
+          <button class="btn btn-outline" onclick="downloadSampleCsv()">↓ Sample CSV</button>
+        </div>
+
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('csv-input').click()">
+          <div class="upload-icon">📄</div>
+          <p class="upload-text">Click to upload a CSV — or drag &amp; drop</p>
+          <p class="upload-hint">Required columns: lead_score, company_size, engagement_score, response_time_hours, email_open_rate, email_click_rate, page_views, time_since_signup_days, industry, company_type, location, product_interest, source, sales_stage</p>
+          <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="handleCsvFile(event)">
+        </div>
+
+        <div id="batch-preview" style="display:none">
+          <div class="preview-header">
+            <span id="preview-count" class="muted-text"></span>
+            <button class="btn btn-outline btn-sm" onclick="clearBatch()">✕ Clear</button>
+          </div>
+          <div class="table-scroll">
+            <table id="preview-table" class="data-table"></table>
+          </div>
+          <button class="btn btn-primary" id="run-batch-btn" onclick="runBatchPredictions()" disabled>
+            Run Batch Predictions
+          </button>
+        </div>
+
+        <div id="batch-results" style="display:none">
+          <div class="section-divider"></div>
+          <div class="results-header">
+            <h3>Results</h3>
+            <button class="btn btn-outline btn-sm" onclick="downloadResultsCsv()">↓ Export CSV</button>
+          </div>
+          <div class="table-scroll">
+            <table id="results-table" class="data-table"></table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <div id="error-toast" class="toast error" style="display:none">
+    <span id="error-msg"></span>
+    <button onclick="hideError()" class="toast-close">✕</button>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

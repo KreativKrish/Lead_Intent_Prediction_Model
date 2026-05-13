@@ -1,26 +1,31 @@
-"""Configuration management using Dynaconf."""
+"""Configuration management."""
 
 import os
+import re
 from pathlib import Path
 from typing import Any
 
 import yaml
-from dynaconf import Dynaconf
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 CONFIG_DIR = PROJECT_ROOT / "config"
 
+_INTERP = re.compile(r"@\{(\w+)\|([^}]*)\}")
+
+
+def _resolve(value: Any) -> Any:
+    """Resolve @{VAR|default} interpolations recursively."""
+    if isinstance(value, str):
+        return _INTERP.sub(lambda m: os.environ.get(m.group(1), m.group(2)), value)
+    if isinstance(value, dict):
+        return {k: _resolve(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_resolve(item) for item in value]
+    return value
+
 
 def load_config(env: str | None = None) -> dict[str, Any]:
-    """Load configuration from YAML files with environment overrides.
-
-    Args:
-        env: Environment name (development, staging, production).
-             Defaults to ENV env var or 'development'.
-
-    Returns:
-        Configuration dictionary.
-    """
+    """Load and resolve configuration from YAML files with environment overrides."""
     env = env or os.getenv("ENV", "development")
 
     with open(CONFIG_DIR / "base.yaml") as f:
@@ -32,11 +37,10 @@ def load_config(env: str | None = None) -> dict[str, Any]:
             env_config = yaml.safe_load(f) or {}
             _deep_update(config, env_config)
 
-    return config
+    return _resolve(config)
 
 
 def _deep_update(base: dict, update: dict) -> None:
-    """Recursively update base dict with update dict."""
     for key, value in update.items():
         if isinstance(value, dict) and key in base and isinstance(base[key], dict):
             _deep_update(base[key], value)
@@ -45,10 +49,10 @@ def _deep_update(base: dict, update: dict) -> None:
 
 
 class Config:
-    """Configuration singleton with environment interpolation."""
+    """Configuration singleton backed by a plain resolved dict."""
 
     _instance = None
-    _config = None
+    _data: dict = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -56,33 +60,23 @@ class Config:
         return cls._instance
 
     def __init__(self):
-        if Config._config is None:
-            Config._config = Dynaconf(
-                settings_files=[
-                    str(CONFIG_DIR / "base.yaml"),
-                    str(CONFIG_DIR / f"{os.getenv('ENV', 'development')}.yaml"),
-                ],
-                environments=True,
-                env_prefix="APP",
-            )
-
-    def __getattr__(self, key: str):
-        return getattr(Config._config, key)
+        if Config._data is None:
+            Config._data = load_config()
 
     def get(self, key: str, default: Any = None) -> Any:
-        """Get configuration value with dot notation support."""
-        keys = key.split(".")
-        value = Config._config
-        for k in keys:
+        """Get a value using dot-notation (e.g. 'mlflow.model_name')."""
+        value = Config._data
+        for k in key.split("."):
             if isinstance(value, dict):
                 value = value.get(k, default)
+                if value is default:
+                    return default
             else:
                 return default
         return value
 
     def to_dict(self) -> dict:
-        """Export entire config as dictionary."""
-        return Config._config.to_dict()
+        return dict(Config._data)
 
 
 def get_config() -> Config:
