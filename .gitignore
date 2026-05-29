@@ -82,6 +82,8 @@ ehthumbs.db
 
 # Project specific
 *.log
+ml-flow-artifacts/
+*.db
 data/raw/
 data/processed/
 models/
